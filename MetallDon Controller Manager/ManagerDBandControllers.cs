@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Timers;
 using MySql.Data.MySqlClient;
@@ -31,14 +32,14 @@ namespace MetallDon_Controller_Manager
         // Добавить контроллер
         void AddController(String ip, String pass, Int32 ping)
         {
-            ControllerlList.Add(new ControllerMOXA(ip, pass, ping));
+            ControllerlList.Add(new ControllerMOXA(ip, pass, ping, SetAccidentToDB));
         }
 
         // Запуск таймера для проверки
         public void RunningMonitoring()
         {
             foreach (ControllerMOXA con in ControllerlList)
-            {
+            {                
                 if (con.Connect() && con.isConnected())
                 {
                     con.Timer.Start();
@@ -48,8 +49,10 @@ namespace MetallDon_Controller_Manager
                     using (MySqlConnection ManagerConn = new MySqlConnection(ConnectionString))
                     {
                         MySqlCommand command = new MySqlCommand();
+                        String DateAccident = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        con.SetDateAccident(DateAccident);
                         command.CommandText = "INSERT INTO `accidentcontroller` select NULL, id, '" +
-                            new DateTime() + "', NULL FROM controllers WHERE ipAddress = '" +
+                            DateAccident +"' FROM controllers WHERE ipAddress = '" +
                             con.GetIPAddress() + "'";
                         Console.WriteLine(command.CommandText);
                         command.Connection = ManagerConn;
@@ -69,6 +72,7 @@ namespace MetallDon_Controller_Manager
                             command.Connection.Close();
                         }
                     }
+                    con.ReConnectTimer.Start(); // Запускаем таймер для бесконечной попытки приконнектится
                 }
             }
         }
@@ -141,6 +145,35 @@ namespace MetallDon_Controller_Manager
                         ReLoadControllers();
                     }
 
+                }
+                catch (MySqlException ex)
+                {
+                    Console.WriteLine("Ошибка работы с БД(UpdateControllerList): \r\n{0}", ex.ToString());
+                    Console.ReadKey();
+                    Environment.Exit(0);
+                }
+                finally
+                {
+                    command.Connection.Close();
+                }
+            }
+        }
+
+        void SetAccidentToDB(String ip)
+        {
+            using (MySqlConnection ManagerConn = new MySqlConnection(ConnectionString))
+            {
+                MySqlCommand command = new MySqlCommand();
+                String DateAccident = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                command.CommandText = "INSERT INTO `accidentcontroller` select NULL, id, '" +
+                    DateAccident + "' FROM controllers WHERE ipAddress = '" +
+                    ip + "'";
+                Console.WriteLine(command.CommandText);
+                command.Connection = ManagerConn;
+                try
+                {
+                    command.Connection.Open();
+                    command.ExecuteNonQuery();
                 }
                 catch (MySqlException ex)
                 {
