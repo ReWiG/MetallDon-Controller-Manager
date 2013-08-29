@@ -3,19 +3,19 @@
   <Profiles />
   <Settings>
     <Setting Name="ipDB" Type="System.String" Scope="Application">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">localhost</Value>
     </Setting>
-    <Setting Name="portDB" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="nameDB" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">metalldon</Value>
     </Setting>
-    <Setting Name="nameDB" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="userDB" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">metalldon</Value>
     </Setting>
-    <Setting Name="userDB" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="passDB" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">123456</Value>
     </Setting>
-    <Setting Name="passDB" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="intervalUpdateDB" Type="System.Double" Scope="Application">
+      <Value Profile="(Default)">1000</Value>
     </Setting>
   </Settings>
 </SettingsFile>
