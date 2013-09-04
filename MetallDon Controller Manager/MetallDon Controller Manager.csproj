@@ -42,7 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ControllerMOXA.cs" />
+    <Compile Include="MOXAController.cs" />
     <Compile Include="ManagerDBandControllers.cs" />
     <Compile Include="MXIO.cs" />
     <Compile Include="Program.cs" />
@@ -52,6 +52,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Sensor.cs" />
     <Compile Include="Settings.cs" />
   </ItemGroup>
   <ItemGroup>
