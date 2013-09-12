@@ -42,8 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ManagerController.cs" />
+    <Compile Include="ManagerDB.cs" />
     <Compile Include="MOXAController.cs" />
-    <Compile Include="ManagerDBandControllers.cs" />
     <Compile Include="MXIO.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

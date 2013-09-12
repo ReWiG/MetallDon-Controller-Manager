@@ -25,7 +25,7 @@ namespace MetallDon_Controller_Manager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("localhost")]
+        [global::System.Configuration.DefaultSettingValueAttribute("127.0.0.1")]
         public string ipDB {
             get {
                 return ((string)(this["ipDB"]));
@@ -61,7 +61,7 @@ namespace MetallDon_Controller_Manager.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1000")]
+        [global::System.Configuration.DefaultSettingValueAttribute("3000")]
         public double intervalUpdateDB {
             get {
                 return ((double)(this["intervalUpdateDB"]));

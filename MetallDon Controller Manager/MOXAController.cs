@@ -17,11 +17,12 @@ namespace MetallDon_Controller_Manager
 
         String IpAddr;
         String Password;
-        List<Sensor> SensorList = new List<Sensor>();
         Int32[] Connection = new Int32[1];
         Boolean IsConnect = false;
+        Boolean[] StatusInputs;
 
         public event EventHandler<String> FailCheckInputsEvent;
+
         public Timer CheckInputsTimer = new Timer();
         public Timer ReconnectTimer = new Timer(ReconnectTimerInterval);
 
@@ -39,7 +40,7 @@ namespace MetallDon_Controller_Manager
             IpAddr = ip;
             Password = pswrd;
             CheckInputsTimer.Interval = ping; // устанавливаем интервал пинга
-            CheckInputsTimer.Elapsed += new ElapsedEventHandler(CheckSensors); // и событие
+            CheckInputsTimer.Elapsed += new ElapsedEventHandler(SetStatusInputs); // и событие
             ReconnectTimer.Elapsed += new ElapsedEventHandler(Reсonnect);          
         }
 
@@ -83,66 +84,10 @@ namespace MetallDon_Controller_Manager
             }
         }
 
-        // Проверка коннекта
-        //void CheckConnect()
-        //{
-        //    byte[] bytCheckStatus = new byte[1];
-        //    Int32 Result = MXIO_CS.MXEIO_CheckConnection(Connection[0], Timeout, bytCheckStatus);
-        //    if (CheckErr(Result, "CheckConnection " + IpAddr))
-        //    {
-        //        switch (bytCheckStatus[0])
-        //        {
-        //            case MXIO_CS.CHECK_CONNECTION_OK:
-        //                Console.WriteLine("MXEIO_CheckConnection: Check connection ok => {0}", bytCheckStatus[0]);
-        //                break;
-        //            case MXIO_CS.CHECK_CONNECTION_FAIL:
-        //                Console.WriteLine("MXEIO_CheckConnection: Check connection fail => {0}", bytCheckStatus[0]);
-        //                break;
-        //            case MXIO_CS.CHECK_CONNECTION_TIME_OUT:
-        //                Console.WriteLine("MXEIO_CheckConnection: Check connection time out => {0}", bytCheckStatus[0]);
-        //                break;
-        //            default:
-        //                Console.WriteLine("MXEIO_CheckConnection: Check connection status unknown => {0}", bytCheckStatus[0]);
-        //                break;
-        //        }
-        //    }
-        //}
-
-        void CheckSensors(object source, ElapsedEventArgs e)
-        {
-            if (SensorList.Count != 0)
-            {
-                Boolean[] arr = CheckInputs();
-                if (arr != null)
-                {                    
-                    foreach (Sensor b in SensorList)
-                    {
-                        if (b.GetNormalState() == arr[b.GetPort()])
-                        {
-                            Console.WriteLine("Порт {0}, Статус: ОК", b.GetPort());
-                        }
-                        else
-                        {
-                            Console.WriteLine("Порт {0}, Статус: Авария!", b.GetPort());
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Ошибка проверки датчиков!");
-                }
-            }
-            else
-            {
-                Console.WriteLine("К контроллеру не подключены датчики!");
-            }
-            
-        }
-
         // Проверка датчиков
-        Boolean[] CheckInputs()
+        void SetStatusInputs(object source, ElapsedEventArgs e)
         {
-            Boolean[] arr = null;
+            StatusInputs = null;
             if (IsConnect)
             {
                 Int32 dwShiftValue;
@@ -151,10 +96,9 @@ namespace MetallDon_Controller_Manager
                 Int32 Result = MXIO_CS.E1K_DI_Reads(Connection[0], 0, 16, dwGetDIValue);
                 if (CheckErr(Result, "Чтение выходов " + IpAddr))
                 {
-                    arr = new Boolean[16];
+                    StatusInputs = new Boolean[16];
                     for (i = 0, dwShiftValue = 0; i < 16; i++, dwShiftValue++)
-                        arr[i] = ((dwGetDIValue[0] & (1 << dwShiftValue)) == 0) ? false : true;
-                    return arr;
+                        StatusInputs[i] = ((dwGetDIValue[0] & (1 << dwShiftValue)) == 0) ? false : true;
                 }
                 else
                 {
@@ -162,16 +106,14 @@ namespace MetallDon_Controller_Manager
                     var handler = FailCheckInputsEvent;
                     if (handler != null)
                         handler(this, IpAddr);
-
+                    
                     CheckInputsTimer.Stop();
                     IsConnect = false;
                     Console.WriteLine("Невозможно прочитать статусы выходов");
+                    Console.WriteLine("Ошибка проверки датчиков!");
                     ReconnectTimer.Start();
-
-                    return arr;
                 }
             }
-            return arr;
         }
 
         // Вывод ошибок
@@ -189,6 +131,16 @@ namespace MetallDon_Controller_Manager
             return IpAddr;
         }
 
+        public Boolean[] GetStatusInputs()
+        {
+            return StatusInputs;
+        }
+
+        public Double GetPing()
+        {
+            return CheckInputsTimer.Interval;
+        }
+
         void Reсonnect(object source, ElapsedEventArgs e)
         {
             if (Connect())
@@ -196,12 +148,10 @@ namespace MetallDon_Controller_Manager
                 ReconnectTimer.Stop();
                 CheckInputsTimer.Start();
             }
-            
         }
 
-        public void AddSensor(Sensor s)
-        {
-            SensorList.Add(s);
-        }
+        
+
+
     }
 }
