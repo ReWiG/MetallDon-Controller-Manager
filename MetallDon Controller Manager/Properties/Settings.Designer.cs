@@ -67,5 +67,14 @@ namespace MetallDon_Controller_Manager.Properties {
                 return ((double)(this["intervalUpdateDB"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("debug")]
+        public string loggingMode {
+            get {
+                return ((string)(this["loggingMode"]));
+            }
+        }
     }
 }

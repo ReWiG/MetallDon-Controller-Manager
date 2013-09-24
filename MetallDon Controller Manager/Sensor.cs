@@ -15,9 +15,11 @@ namespace MetallDon_Controller_Manager
         Boolean State;
         MOXAController Controller;
         Boolean FlagAccident = false;
+        UInt64 IdAccident = 0;
 
         public event EventHandler<String[]> SetStateSensorEvent;
         public event EventHandler<String> SetAccidentSensorEvent;
+        public event EventHandler<UInt64> RecoveryAccidentEvent;
 
         public Timer CheckStatusTimer = new Timer();
 
@@ -49,11 +51,24 @@ namespace MetallDon_Controller_Manager
                 if (NormalState == temp[Port])
                 {
                     Console.WriteLine("Порт {0}, Статус: ОК", Port);
+                    LogManager.Write("Порт " + Port + ", Статус: ОК", true);
+
                     FlagAccident = false;
+
+                    // Если была авария, то записываем время восстановления
+                    if (IdAccident != 0)
+                    {
+                        // Время восстановления
+                        var handler = RecoveryAccidentEvent;
+                        if (handler != null)
+                            handler(this, IdAccident);
+                    }
                 }
                 else
                 {
                     Console.WriteLine("Порт {0}, Статус: Авария!", Port);
+                    LogManager.Write("Порт " + Port + ", Статус: Авария!", true);
+
                     var setAccident = SetAccidentSensorEvent;
                     if ((setAccident != null) && (FlagAccident != true))
                     {
@@ -99,6 +114,16 @@ namespace MetallDon_Controller_Manager
         public Boolean GetNormalState()
         {
             return NormalState;
+        }
+
+        public void SetIdAccident(UInt64 Id)
+        {
+            IdAccident = Id;
+        }
+
+        public UInt64 GetIdAccident()
+        {
+            return IdAccident;
         }
     }
 }

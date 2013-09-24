@@ -20,8 +20,10 @@ namespace MetallDon_Controller_Manager
         Int32[] Connection = new Int32[1];
         Boolean IsConnect = false;
         Boolean[] StatusInputs;
+        UInt64 IdAccident = 0;
 
         public event EventHandler<String> FailCheckInputsEvent;
+        public event EventHandler<UInt64> RecoveryAccidentEvent;
 
         public Timer CheckInputsTimer = new Timer();
         public Timer ReconnectTimer = new Timer(ReconnectTimerInterval);
@@ -49,6 +51,7 @@ namespace MetallDon_Controller_Manager
             if (!IsConnect)
             {
                 Console.WriteLine("Подключение к IP={0}, Порт={1} Таймаут={2}, Пароль={3}", IpAddr, Port, Timeout, Password);
+                LogManager.Write(String.Format("Подключение к IP={0}, Порт={1} Таймаут={2}, Пароль={3}", IpAddr, Port, Timeout, Password), false);
                 for (int i = NumConnectAttemps; i > 0; i--)
                 {
                     Int32 Result = MXIO_CS.MXEIO_E1K_Connect(System.Text.Encoding.UTF8.GetBytes(IpAddr), Port, Timeout, Connection, System.Text.Encoding.UTF8.GetBytes(Password));
@@ -59,6 +62,8 @@ namespace MetallDon_Controller_Manager
                     }
                 }
                 Console.WriteLine("Контроллер {0}, невозможно соединиться", IpAddr);
+                LogManager.Write("Контроллер " + IpAddr + ", невозможно соединиться", false);
+
                 IsConnect = false;
                 return false;
             }
@@ -99,6 +104,15 @@ namespace MetallDon_Controller_Manager
                     StatusInputs = new Boolean[16];
                     for (i = 0, dwShiftValue = 0; i < 16; i++, dwShiftValue++)
                         StatusInputs[i] = ((dwGetDIValue[0] & (1 << dwShiftValue)) == 0) ? false : true;
+
+                    // Если была авария, то записываем время восстановления
+                    if (IdAccident != 0)
+                    {
+                        // Время восстановления
+                        var handler = RecoveryAccidentEvent;
+                        if (handler != null)
+                            handler(this, IdAccident);
+                    }
                 }
                 else
                 {
@@ -110,7 +124,9 @@ namespace MetallDon_Controller_Manager
                     CheckInputsTimer.Stop();
                     IsConnect = false;
                     Console.WriteLine("Невозможно прочитать статусы выходов");
+                    LogManager.Write("Невозможно прочитать статусы выходов", false);
                     Console.WriteLine("Ошибка проверки датчиков!");
+                    LogManager.Write("Ошибка проверки датчиков!", false);
                     ReconnectTimer.Start();
                 }
             }
@@ -120,6 +136,8 @@ namespace MetallDon_Controller_Manager
         static Boolean CheckErr(int iRet, string functionName)
         {
             Console.WriteLine("Функция \"{0}\". Сообщение : {1}", functionName, Enum.GetName(typeof(MXIO_CS.MXIO_ErrorCode), iRet));
+            LogManager.Write(String.Format("Функция \"{0}\". Сообщение : {1}", functionName, Enum.GetName(typeof(MXIO_CS.MXIO_ErrorCode), iRet)), true);
+
             if (iRet == MXIO_CS.MXIO_OK)
                 return true;
             else
@@ -145,12 +163,28 @@ namespace MetallDon_Controller_Manager
         {
             if (Connect())
             {
+                if (IdAccident != 0)
+                {
+                    // Время восстановления
+                    var handler = RecoveryAccidentEvent;
+                    if (handler != null)
+                        handler(this, IdAccident);
+                }
+
                 ReconnectTimer.Stop();
                 CheckInputsTimer.Start();
             }
         }
 
-        
+        public void SetIdAccident(UInt64 Id)
+        {
+            IdAccident = Id;
+        }
+
+        public UInt64 GetIdAccident()
+        {
+            return IdAccident;
+        }
 
 
     }

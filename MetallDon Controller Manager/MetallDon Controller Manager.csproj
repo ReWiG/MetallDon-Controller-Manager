@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LogManager.cs" />
     <Compile Include="ManagerController.cs" />
     <Compile Include="ManagerDB.cs" />
     <Compile Include="MOXAController.cs" />

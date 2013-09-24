@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MySql.Data.MySqlClient;
 using System.Timers;
 
 namespace MetallDon_Controller_Manager
@@ -73,13 +72,24 @@ namespace MetallDon_Controller_Manager
         {
             foreach (MOXAController con in ControllerList)
             {
-                // Ивент для обработки ошибок чтения портов
+                // Ивент для записи аварии контроллера
                 con.FailCheckInputsEvent += (sender, ip) =>
                 {
                     DateAccident = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    db.InsertToDB("INSERT INTO `accidentcontroller` select NULL, id, '" +
-                            DateAccident + "' FROM controllers WHERE ipAddress = '" +
-                            ip + "'");
+                    // Записываем в базу и запоминаем ID аварии
+                    con.SetIdAccident(db.InsertAccident("INSERT INTO `MoxaControllerAlarm` SELECT NULL, id, '" +
+                            DateAccident + "', NULL FROM MoxaController WHERE ipAddress = '" +
+                            ip + "';"));
+                };
+
+                // Ивент для записи времени восстановления контроллера
+                con.RecoveryAccidentEvent += (Sender, IdAccident) =>
+                {
+                    DateAccident = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    db.Update("UPDATE `MoxaControllerAlarm`" +
+                        " SET `recoveryDateTime`='" + DateAccident + "' WHERE id = " + 
+                        con.GetIdAccident());
+                    con.SetIdAccident(0); // обнуляем ID аварии
                 };
 
                 if (con.Connect())
@@ -89,9 +99,10 @@ namespace MetallDon_Controller_Manager
                 else
                 {
                     String DateAccident = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    db.InsertToDB("INSERT INTO `accidentcontroller` select NULL, id, '" +
-                            DateAccident + "' FROM controllers WHERE ipAddress = '" +
-                            con.GetIPAddress() + "'");
+                    // Записываем в базу и запоминаем ID аварии
+                    con.SetIdAccident(db.InsertAccident("INSERT INTO `MoxaControllerAlarm` SELECT NULL, id, '" +
+                            DateAccident + "', NULL FROM MoxaController WHERE ipAddress = '" +
+                            con.GetIPAddress() + "';"));
                     con.ReconnectTimer.Start(); // Запускаем таймер для бесконечной попытки приконнектится
                 }
             }
@@ -101,17 +112,28 @@ namespace MetallDon_Controller_Manager
                 // Ивент для записи состояния датчика в базу
                 sens.SetStateSensorEvent += (sender, args) =>
                 {
-                    db.InsertToDB("UPDATE `sensors` SET `state`=" + args[1] +
+                    db.Update("UPDATE `MoxaSensor` SET `state`=" + args[1] +
                         " WHERE idsensor = " + args[0]);
                 };
 
-                // Ивент для записи аварий в базу
+                // Ивент для записи аварий датчика
                 sens.SetAccidentSensorEvent += (sender, idsensor) =>
                 {
                     DateAccident = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    db.InsertToDB("INSERT INTO `accidentsensor` select NULL, idsensor, '" +
-                            DateAccident + "' FROM sensors WHERE idsensor = '" +
-                            idsensor + "'");
+                    // Записываем в базу и запоминаем ID аварии
+                    sens.SetIdAccident(db.InsertAccident("INSERT INTO `MoxaSensorAlarm` SELECT NULL, fkSensor, '" +
+                            DateAccident + "', NULL FROM MoxaSensor WHERE idsensor = '" +
+                            idsensor + "';"));
+                };
+
+                // Ивент для записи времени восстановления датчика
+                sens.RecoveryAccidentEvent += (Sender, IdAccident) =>
+                {
+                    DateAccident = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    db.Update("UPDATE `MoxaSensorAlarm`" +
+                        " SET `recoveryDateTime`='" + DateAccident + "' WHERE id = " +
+                        sens.GetIdAccident());
+                    sens.SetIdAccident(0); // обнуляем ID аварии
                 };
 
                 sens.CheckStatusTimer.Start();
@@ -136,10 +158,13 @@ namespace MetallDon_Controller_Manager
                 SensorList.Clear();
 
                 Console.WriteLine("======================\nСписок датчиков и контроллеров успешно очищен\n======================");
+                LogManager.Write("======================\nСписок датчиков и контроллеров успешно очищен\n======================", false);
                 FillSensorList();
                 Console.WriteLine("...и загружен заного");
+                LogManager.Write("...и загружен заного", false);
                 RunningMonitoring();
                 Console.WriteLine("======================\nМониторинг запущен\n======================");
+                LogManager.Write("...и загружен заного", false);
             }
         }
     }

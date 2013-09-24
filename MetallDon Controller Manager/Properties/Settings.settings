@@ -17,5 +17,8 @@
     <Setting Name="intervalUpdateDB" Type="System.Double" Scope="Application">
       <Value Profile="(Default)">3000</Value>
     </Setting>
+    <Setting Name="loggingMode" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">debug</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

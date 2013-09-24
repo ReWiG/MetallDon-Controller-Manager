@@ -22,7 +22,7 @@ namespace MetallDon_Controller_Manager
             using (MySqlConnection ManagerCon = new MySqlConnection(ConnectionString))
             {
                 MySqlCommand command = new MySqlCommand();
-                command.CommandText = "SELECT idsensor, port, state, normalState, ipAddress, password, pingInterval FROM controllers INNER JOIN sensors ON controllers.id = sensors.controller WHERE controllers.working = 1";
+                command.CommandText = "SELECT idsensor, port, state, normalState, ipAddress, password, pingInterval FROM MoxaController INNER JOIN MoxaSensor ON MoxaController.id = MoxaSensor.fkController WHERE MoxaController.active = 1";
                 command.Connection = ManagerCon;
                 MySqlDataReader reader;
                 try
@@ -42,6 +42,7 @@ namespace MetallDon_Controller_Manager
                 catch (MySqlException ex)
                 {
                     Console.WriteLine("Ошибка работы с БД(SelectControllers): \r\n{0}", ex.ToString());
+                    LogManager.Write("Ошибка работы с БД(SelectControllers): \r\n" + ex.Message, true);
                     return null;
                 }
                 finally
@@ -57,7 +58,7 @@ namespace MetallDon_Controller_Manager
             using (MySqlConnection ManagerConn = new MySqlConnection(ConnectionString))
             {
                 MySqlCommand command = new MySqlCommand();
-                command.CommandText = "SELECT `isUpdated` FROM `update` WHERE id =1";
+                command.CommandText = "SELECT `request` FROM `MoxaUpdateRequest` WHERE id =1";
                 command.Connection = ManagerConn;
                 try
                 {
@@ -65,8 +66,10 @@ namespace MetallDon_Controller_Manager
 
                     if ((Boolean)command.ExecuteScalar())
                     {
-                        Console.WriteLine("UPDATE `update` SET `isUpdated`= 0 WHERE `id` = 1");
-                        command.CommandText = "UPDATE `update` SET `isUpdated`= 0 WHERE `id` = 1";
+                        Console.WriteLine("UPDATE `MoxaUpdateRequest` SET `request`= 0 WHERE `id` = 1");
+                        LogManager.Write("UPDATE `MoxaUpdateRequest` SET `request`= 0 WHERE `id` = 1", false);
+
+                        command.CommandText = "UPDATE `MoxaUpdateRequest` SET `request`= 0 WHERE `id` = 1";
                         command.ExecuteNonQuery();
 
                         return true;
@@ -75,7 +78,8 @@ namespace MetallDon_Controller_Manager
                 }
                 catch (MySqlException ex)
                 {
-                    Console.WriteLine("Ошибка работы с БД(UpdateControllerList): \r\n{0}", ex);
+                    Console.WriteLine("Ошибка работы с БД(isUpdated): \r\n{0}", ex);
+                    LogManager.Write("Ошибка работы с БД(isUpdated): \r\n" + ex.Message, true);
                     return false;
                 }
                 finally
@@ -86,7 +90,39 @@ namespace MetallDon_Controller_Manager
             }
         }
 
-        public void InsertToDB(String CommandText)
+        public UInt64 InsertAccident(String CommandText)
+        {
+            UInt64 temp = 0;
+            using (MySqlConnection ManagerConn = new MySqlConnection(ConnectionString))
+            {
+                MySqlCommand command = new MySqlCommand();
+
+                command.CommandText = CommandText +  "SELECT @@IDENTITY;";
+
+                Console.WriteLine(command.CommandText);
+                LogManager.Write(command.CommandText, true);
+
+                command.Connection = ManagerConn;
+                try
+                {
+                    command.Connection.Open();
+                    temp = (UInt64)command.ExecuteScalar();
+                }
+                catch (MySqlException ex)
+                {
+                    Console.WriteLine("Ошибка работы с БД(InsertAccident): \r\n{0}", ex.ToString());
+                    LogManager.Write("Ошибка работы с БД(InsertAccident): \r\n" + ex.Message, true);
+                }
+                finally
+                {
+                    command.Connection.Close();
+                    ManagerConn.Close();
+                }
+                return temp;
+            }
+        }
+
+        public void Update(string CommandText)
         {
             using (MySqlConnection ManagerConn = new MySqlConnection(ConnectionString))
             {
@@ -102,9 +138,8 @@ namespace MetallDon_Controller_Manager
                 }
                 catch (MySqlException ex)
                 {
-                    Console.WriteLine("Ошибка работы с БД(InsertToDB): \r\n{0}", ex.ToString());
-                    Console.ReadKey();
-                    Environment.Exit(0);
+                    Console.WriteLine("Ошибка работы с БД(Update): \r\n{0}", ex.ToString());
+                    LogManager.Write("Ошибка работы с БД(Update): \r\n" + ex.Message, true);
                 }
                 finally
                 {
